@@ -16,8 +16,10 @@ const FACTORIO_RCON_PASSWORD = process.env.FACTORIO_RCON_PASSWORD || '';
 async function executeRconCommand(command: string): Promise<string> {
   try {
     // Execute rcon command
+    // Remove leading slash from command if present
+    const cleanCommand = command.startsWith('/') ? command.substring(1) : command;
     const { stdout } = await execAsync(
-      `rcon -a ${FACTORIO_SERVER_IP}:${FACTORIO_RCON_PORT} -p ${FACTORIO_RCON_PASSWORD} "${command}"`
+      `rcon -a ${FACTORIO_SERVER_IP}:${FACTORIO_RCON_PORT} -p "${FACTORIO_RCON_PASSWORD}" "${cleanCommand}"`
     );
     return stdout.trim();
   } catch (error: unknown) {
