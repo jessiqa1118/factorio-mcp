@@ -149,6 +149,96 @@ server.tool(
   }
 );
 
+// Tool to get player inventory
+server.tool(
+  "get_player_inventory",
+  {
+    player_name: z.string().optional().describe('Player name to check inventory (optional, if not provided will show all players)')
+  },
+  async ({ player_name }) => {
+    try {
+      // Lua script to get player inventory
+      let luaScript = '';
+      
+      if (player_name) {
+        // Get inventory for a specific player
+        luaScript = `
+          local player = game.get_player('${player_name}')
+          if not player then
+            return 'Player not found: ${player_name}'
+          end
+          
+          local result = 'Inventory for ' .. player.name .. ':\\n'
+          local main_inventory = player.get_main_inventory()
+          
+          if main_inventory.is_empty() then
+            result = result .. '  (Empty inventory)'
+          else
+            local items = {}
+            for _, item in ipairs(main_inventory.get_contents()) do
+              table.insert(items, { name = item.name, count = item.count })
+            end
+            
+            table.sort(items, function(a, b) return a.name < b.name end)
+            
+            for _, item in ipairs(items) do
+              result = result .. '  ' .. item.name .. ': ' .. item.count .. '\\n'
+            end
+          end
+          
+          return result
+        `;
+      } else {
+        // Get inventory for all connected players
+        luaScript = `
+          local result = ''
+          local players = game.connected_players
+          
+          if #players == 0 then
+            return 'No players connected'
+          end
+          
+          for _, player in pairs(players) do
+            result = result .. 'Inventory for ' .. player.name .. ':\\n'
+            local main_inventory = player.get_main_inventory()
+            
+            if main_inventory.is_empty() then
+              result = result .. '  (Empty inventory)\\n'
+            else
+              local items = {}
+              for _, item in ipairs(main_inventory.get_contents()) do
+                table.insert(items, { name = item.name, count = item.count })
+              end
+              
+              table.sort(items, function(a, b) return a.name < b.name end)
+              
+              for _, item in ipairs(items) do
+                result = result .. '  ' .. item.name .. ': ' .. item.count .. '\\n'
+              end
+            end
+            
+            result = result .. '\\n'
+          end
+          
+          return result
+        `;
+      }
+      
+      // Execute the Lua script
+      const result = await executeRconCommand(`/silent-command rcon.print((function() ${luaScript} end)())`);
+      
+      return {
+        content: [{ type: "text", text: result }]
+      };
+    } catch (error: unknown) {
+      return {
+        content: [{ type: "text", text: `Error occurred: ${error}` }],
+        isError: true
+      };
+    }
+  }
+);
+
 // Tool to execute arbitrary command
 server.tool(
   "execute_command",
