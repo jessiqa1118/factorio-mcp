@@ -19,9 +19,10 @@ async function executeRconCommand(command: string): Promise<string> {
     // Remove leading slash from command if present
     const cleanCommand = command.startsWith('/') ? command.substring(1) : command;
     
-    // Use rcon with config file (~/.config/rcon/rcon.yaml)
+    // Use rcon with explicit config file path
+    // Note: ~ expands to the home directory of the current user
     console.error('Executing rcon command:', cleanCommand);
-    const { stdout } = await execAsync(`rcon "${cleanCommand}"`);
+    const { stdout } = await execAsync(`rcon -c ~/.config/rcon/rcon.yaml "${cleanCommand}"`);
     return stdout.trim();
   } catch (error: unknown) {
     console.error('Error executing RCON command:', error);
