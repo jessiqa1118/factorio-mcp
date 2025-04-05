@@ -70,8 +70,17 @@ server.tool(
   {},
   async () => {
     try {
-      // Use a simpler approach with a single command
-      const result = await executeRconCommand('/silent-command for _, p in pairs(game.connected_players) do rcon.print(p.name) end');
+      // Get player count first
+      const playerCount = await executeRconCommand('/silent-command rcon.print(#game.connected_players)');
+      
+      if (parseInt(playerCount) === 0) {
+        return {
+          content: [{ type: "text", text: "No players connected" }]
+        };
+      }
+      
+      // Get player names only, without any extra information
+      const result = await executeRconCommand('/silent-command local names = ""; for _, p in pairs(game.connected_players) do names = names .. p.name .. "\\n" end; rcon.print(names)');
       
       // If no output, no players are connected
       if (!result || result.trim() === '') {
@@ -89,14 +98,14 @@ server.tool(
         };
       }
       
-      let output = "";
-      // Format the output with a simple timestamp
+      // Format the output with the current time
       const now = new Date();
       const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
       
-      for (const player of players) {
-        output += `${timeStr} [JOIN] ${player} joined the game\n`;
-      }
+      // Create a clean output with one player per line
+      const output = players.map(player => 
+        `${timeStr} [JOIN] ${player} joined the game`
+      ).join('\n');
       
       return {
         content: [{ type: "text", text: output }]
