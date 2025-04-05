@@ -62,10 +62,11 @@ server.tool(
   {},
   async () => {
     try {
-      // Execute silent command to get player list without in-game notification
-      const result = await executeRconCommand('/silent-command for _, p in pairs(game.connected_players) do rcon.print(p.name) end');
+      // Get player join events from the log
+      const joinEvents = await executeRconCommand('/silent-command local result = ""; for _, event in pairs(game.players) do if event.connected then result = result .. game.tick_to_time_string(event.online_time) .. " [JOIN] " .. event.name .. " joined the game\\n" end end; rcon.print(result)');
+      
       return {
-        content: [{ type: "text", text: result }]
+        content: [{ type: "text", text: joinEvents }]
       };
     } catch (error: unknown) {
       return {
