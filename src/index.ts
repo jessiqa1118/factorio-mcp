@@ -70,60 +70,47 @@ server.tool(
   {},
   async () => {
     try {
-      // Use a different approach that minimizes command display in chat
-      // Execute a single command that returns all the information we need
-      const result = await executeRconCommand(`/silent-command 
-        local result = {}
-        if #game.connected_players == 0 then
-          result.count = 0
-          result.players = {}
-        else
-          result.count = #game.connected_players
-          result.players = {}
-          for i, player in pairs(game.connected_players) do
-            result.players[i] = {
-              name = player.name,
-              online_time = player.online_time
-            }
-          end
-        end
-        rcon.print(game.table_to_json(result))
-      `.replace(/\n/g, ' '));
+      // First check if there are any connected players
+      const playerCount = await executeRconCommand('/silent-command rcon.print(#game.connected_players)');
       
-      try {
-        // Parse the JSON response
-        const data = JSON.parse(result);
-        
-        if (data.count === 0) {
-          return {
-            content: [{ type: "text", text: "No players connected" }]
-          };
-        }
-        
-        let output = "";
-        // Format the output
-        for (const index in data.players) {
-          const player = data.players[index];
-          // Convert ticks to time string manually
-          const ticks = player.online_time;
-          const seconds = Math.floor(ticks / 60);
-          const minutes = Math.floor(seconds / 60);
-          const hours = Math.floor(minutes / 60);
-          const timeStr = `${hours}:${minutes % 60}:${seconds % 60}`;
-          
-          output += `${timeStr} [JOIN] ${player.name} joined the game\n`;
-        }
-        
+      if (parseInt(playerCount) === 0) {
         return {
-          content: [{ type: "text", text: output }]
-        };
-      } catch (jsonError) {
-        // Fallback if JSON parsing fails
-        console.error('JSON parsing error:', jsonError);
-        return {
-          content: [{ type: "text", text: `Error parsing player data: ${result}` }]
+          content: [{ type: "text", text: "No players connected" }]
         };
       }
+      
+      // Get player names directly without using table_to_json
+      const playerNames = await executeRconCommand('/silent-command local names = ""; for _, p in pairs(game.connected_players) do names = names .. p.name .. "," end; rcon.print(names)');
+      
+      // Get player online times
+      const playerTimes = await executeRconCommand('/silent-command local times = ""; for _, p in pairs(game.connected_players) do times = times .. p.online_time .. "," end; rcon.print(times)');
+      
+      // Process the results
+      const names = playerNames.split(',').filter(Boolean);
+      const times = playerTimes.split(',').filter(Boolean).map(Number);
+      
+      if (names.length === 0) {
+        return {
+          content: [{ type: "text", text: "No players connected" }]
+        };
+      }
+      
+      let output = "";
+      // Format the output
+      for (let i = 0; i < names.length; i++) {
+        // Convert ticks to time string manually
+        const ticks = times[i];
+        const seconds = Math.floor(ticks / 60);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const timeStr = `${hours}:${minutes % 60}:${seconds % 60}`;
+        
+        output += `${timeStr} [JOIN] ${names[i]} joined the game\n`;
+      }
+      
+      return {
+        content: [{ type: "text", text: output }]
+      };
     } catch (error: unknown) {
       return {
         content: [{ type: "text", text: `Error occurred: ${error}` }],
