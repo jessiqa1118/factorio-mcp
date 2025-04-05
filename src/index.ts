@@ -12,12 +12,12 @@ const FACTORIO_SERVER_IP = process.env.FACTORIO_SERVER_IP || '127.0.0.1';
 const FACTORIO_RCON_PORT = process.env.FACTORIO_RCON_PORT || '27015';
 const FACTORIO_RCON_PASSWORD = process.env.FACTORIO_RCON_PASSWORD || '';
 
-// Function to execute factorio-rcon command
+// Function to execute rcon command
 async function executeRconCommand(command: string): Promise<string> {
   try {
-    // Execute factorio-rcon command
+    // Execute rcon command
     const { stdout } = await execAsync(
-      `factorio-rcon --connect ${FACTORIO_SERVER_IP} --port ${FACTORIO_RCON_PORT} --password ${FACTORIO_RCON_PASSWORD} "${command}"`
+      `rcon -a ${FACTORIO_SERVER_IP}:${FACTORIO_RCON_PORT} -p ${FACTORIO_RCON_PASSWORD} "${command}"`
     );
     return stdout.trim();
   } catch (error: unknown) {
