@@ -62,12 +62,46 @@ server.tool(
   {},
   async () => {
     try {
-      // Get player join events from the log
-      const joinEvents = await executeRconCommand('/silent-command local result = ""; for _, event in pairs(game.players) do if event.connected then result = result .. game.tick_to_time_string(event.online_time) .. " [JOIN] " .. event.name .. " joined the game\\n" end end; rcon.print(result)');
+      // Get connected players without showing command in chat
+      // First get the number of connected players
+      const playerCount = await executeRconCommand('/silent-command rcon.print(#game.connected_players)');
       
-      return {
-        content: [{ type: "text", text: joinEvents }]
-      };
+      if (parseInt(playerCount) === 0) {
+        return {
+          content: [{ type: "text", text: "No players connected" }]
+        };
+      }
+      
+      // Then get each player's name and join time separately
+      const playerList = await executeRconCommand('/silent-command local players = {}; for i, player in pairs(game.connected_players) do players[i] = {name=player.name, time=player.online_time} end; rcon.print(game.table_to_json(players))');
+      
+      // Parse the JSON response
+      try {
+        const players = JSON.parse(playerList);
+        let result = "";
+        
+        // Format the output
+        for (const index in players) {
+          const player = players[index];
+          // Convert ticks to time string manually since we can't use game.tick_to_time_string here
+          const ticks = player.time;
+          const seconds = Math.floor(ticks / 60);
+          const minutes = Math.floor(seconds / 60);
+          const hours = Math.floor(minutes / 60);
+          const timeStr = `${hours}:${minutes % 60}:${seconds % 60}`;
+          
+          result += `${timeStr} [JOIN] ${player.name} joined the game\n`;
+        }
+        
+        return {
+          content: [{ type: "text", text: result }]
+        };
+      } catch (jsonError) {
+        // Fallback if JSON parsing fails
+        return {
+          content: [{ type: "text", text: `Connected players: ${playerList}` }]
+        };
+      }
     } catch (error: unknown) {
       return {
         content: [{ type: "text", text: `Error occurred: ${error}` }],
