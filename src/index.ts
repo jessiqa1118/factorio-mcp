@@ -51,7 +51,8 @@ server.tool(
   async () => {
     try {
       // Execute silent command to get server information without in-game notification
-      const result = await executeRconCommand('/silent-command rcon.print("Version: " .. game.active_mods["base"] .. ", Tick: " .. game.tick .. ", Players: " .. #game.connected_players .. ", Surfaces: " .. #game.surfaces)');
+      // Use single quotes for the Lua string to avoid escaping issues
+      const result = await executeRconCommand('/silent-command rcon.print(\'Version: \' .. game.active_mods["base"] .. \', Tick: \' .. game.tick .. \', Players: \' .. #game.connected_players .. \', Surfaces: \' .. #game.surfaces)');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -127,7 +128,8 @@ server.tool(
   async () => {
     try {
       // Execute silent command to get game time without in-game notification
-      const result = await executeRconCommand('/silent-command rcon.print("Game time: " .. math.floor(game.tick / (60 * 60 * 24)) .. " days, " .. math.floor(game.tick / (60 * 60)) % 24 .. " hours, " .. math.floor(game.tick / 60) % 60 .. " minutes (Total ticks: " .. game.tick .. ")")');
+      // Use single quotes for the Lua string to avoid escaping issues
+      const result = await executeRconCommand('/silent-command rcon.print(\'Game time: \' .. math.floor(game.tick / (60 * 60 * 24)) .. \' days, \' .. math.floor(game.tick / (60 * 60)) % 24 .. \' hours, \' .. math.floor(game.tick / 60) % 60 .. \' minutes (Total ticks: \' .. game.tick .. \')\')');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -161,7 +163,8 @@ server.tool(
         const cleanCmd = command.startsWith('/') ? command.substring(1) : command;
         // For simple commands, just prepend silent-command
         // For complex commands that need to return data, wrap in rcon.print
-        const silentCmd = `/silent-command rcon.print(pcall(function() ${cleanCmd} end))`;
+        // Use select(2, pcall(...)) to only get the second return value from pcall
+        const silentCmd = `/silent-command local success, result = pcall(function() return ${cleanCmd} end); rcon.print(result)`;
         const result = await executeRconCommand(silentCmd);
         return {
           content: [{ type: "text", text: result }]
