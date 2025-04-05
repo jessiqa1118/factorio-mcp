@@ -42,8 +42,8 @@ server.tool(
   {},
   async () => {
     try {
-      // Execute /serverinfo command to get server information
-      const result = await executeRconCommand('/serverinfo');
+      // Execute silent command to get server information without in-game notification
+      const result = await executeRconCommand('/silent-command rcon.print(game.table_to_json({version=game.active_mods["base"], tick=game.tick, player_count=table_size(game.connected_players), surface_count=table_size(game.surfaces)}))');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -62,8 +62,8 @@ server.tool(
   {},
   async () => {
     try {
-      // Execute /players online command to get online players
-      const result = await executeRconCommand('/players online');
+      // Execute silent command to get player list without in-game notification
+      const result = await executeRconCommand('/silent-command local players = {}; for _, p in pairs(game.connected_players) do table.insert(players, {name=p.name, online_time=p.online_time}); end; rcon.print(game.table_to_json(players))');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -82,8 +82,8 @@ server.tool(
   {},
   async () => {
     try {
-      // Execute /time command to get in-game time
-      const result = await executeRconCommand('/time');
+      // Execute silent command to get game time without in-game notification
+      const result = await executeRconCommand('/silent-command local ticks = game.tick; local seconds = ticks / 60; local minutes = math.floor(seconds / 60); local hours = math.floor(minutes / 60); local days = math.floor(hours / 24); rcon.print(string.format("Game time: %d days, %d hours, %d minutes (Total ticks: %d)", days, hours % 24, minutes % 60, ticks))');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -99,13 +99,30 @@ server.tool(
 // Tool to execute arbitrary command
 server.tool(
   "execute_command",
-  { command: z.string().describe('Command to execute') },
-  async ({ command }) => {
+  { 
+    command: z.string().describe('Command to execute'),
+    silent: z.boolean().default(true).describe('Whether to use silent-command (no in-game notification)')
+  },
+  async ({ command, silent }) => {
     try {
-      const result = await executeRconCommand(command);
-      return {
-        content: [{ type: "text", text: result }]
-      };
+      // If command already starts with /silent-command, use it as is
+      if (command.startsWith('/silent-command') || !silent) {
+        const result = await executeRconCommand(command);
+        return {
+          content: [{ type: "text", text: result }]
+        };
+      } else {
+        // Wrap command in silent-command if it's not already and silent is true
+        // If command starts with /, remove it before wrapping
+        const cleanCmd = command.startsWith('/') ? command.substring(1) : command;
+        // For simple commands, just prepend silent-command
+        // For complex commands that need to return data, wrap in rcon.print
+        const silentCmd = `/silent-command rcon.print(pcall(function() ${cleanCmd} end))`;
+        const result = await executeRconCommand(silentCmd);
+        return {
+          content: [{ type: "text", text: result }]
+        };
+      }
     } catch (error: unknown) {
       return {
         content: [{ type: "text", text: `Error occurred: ${error}` }],
