@@ -18,10 +18,26 @@ async function executeRconCommand(command: string): Promise<string> {
     // Execute rcon command
     // Remove leading slash from command if present
     const cleanCommand = command.startsWith('/') ? command.substring(1) : command;
-    const { stdout } = await execAsync(
-      `rcon -a ${FACTORIO_SERVER_IP}:${FACTORIO_RCON_PORT} -p "${FACTORIO_RCON_PASSWORD}" "${cleanCommand}"`
-    );
-    return stdout.trim();
+    
+    // Debug output to verify environment variables
+    console.error('Debug - Environment variables:');
+    console.error('  FACTORIO_SERVER_IP:', FACTORIO_SERVER_IP);
+    console.error('  FACTORIO_RCON_PORT:', FACTORIO_RCON_PORT);
+    console.error('  FACTORIO_RCON_PASSWORD length:', FACTORIO_RCON_PASSWORD ? FACTORIO_RCON_PASSWORD.length : 0);
+    
+    // Try using rcon without specifying address and password (using config file)
+    try {
+      const { stdout } = await execAsync(`rcon "${cleanCommand}"`);
+      return stdout.trim();
+    } catch (configError) {
+      console.error('Failed to use config file, falling back to command line parameters');
+      
+      // Fallback to command line parameters
+      const { stdout } = await execAsync(
+        `rcon -a ${FACTORIO_SERVER_IP}:${FACTORIO_RCON_PORT} -p "${FACTORIO_RCON_PASSWORD}" "${cleanCommand}"`
+      );
+      return stdout.trim();
+    }
   } catch (error: unknown) {
     console.error('Error executing RCON command:', error);
     throw new Error(`Failed to execute RCON command: ${error}`);
