@@ -52,8 +52,8 @@ server.tool(
     try {
       // Execute silent command to get server information without in-game notification
       // Use single quotes for the Lua string to avoid escaping issues
-      // Use game.version instead of game.active_mods["base"] which may not be available
-      const result = await executeRconCommand('/silent-command rcon.print(\'Version: \' .. game.version .. \', Tick: \' .. game.tick .. \', Players: \' .. #game.connected_players .. \', Surfaces: \' .. #game.surfaces)');
+      // Use script.active_mods.base to get the Factorio version
+      const result = await executeRconCommand('/silent-command rcon.print(\'Version: \' .. script.active_mods.base .. \', Tick: \' .. game.tick .. \', Players: \' .. #game.connected_players .. \', Surfaces: \' .. #game.surfaces)');
       return {
         content: [{ type: "text", text: result }]
       };
