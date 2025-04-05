@@ -113,7 +113,7 @@ server.tool(
       
       // Create a clean output with one player per line
       const output = players.map(player => 
-        `${timeStr} [JOIN] ${player} joined the game`
+        `${timeStr} [ONLINE] ${player} is currently connected`
       ).join('\n');
       
       return {
