@@ -157,12 +157,10 @@ server.tool(
   },
   async ({ player_name }) => {
     try {
-      // Lua script to get player inventory
-      let luaScript = '';
-      
+      // If player_name is provided, get inventory for that specific player
       if (player_name) {
         // Get inventory for a specific player
-        luaScript = `
+        const luaScript = `
           local player = game.get_player('${player_name}')
           if not player then
             return 'Player not found: ${player_name}'
@@ -188,22 +186,52 @@ server.tool(
           
           return result
         `;
+        
+        // Execute the Lua script
+        const result = await executeRconCommand(`/silent-command rcon.print((function() ${luaScript} end)())`);
+        
+        return {
+          content: [{ type: "text", text: result }]
+        };
       } else {
-        // Get inventory for all connected players
-        luaScript = `
-          local result = ''
-          local players = game.connected_players
-          
-          if #players == 0 then
-            return 'No players connected'
-          end
-          
-          for _, player in pairs(players) do
-            result = result .. 'Inventory for ' .. player.name .. ':\\n'
+        // Get inventory for all connected players by executing multiple commands
+        
+        // First, get the list of connected players
+        const playersScript = `/silent-command local names = ''; for _, p in pairs(game.connected_players) do names = names .. p.name .. '\\n' end; rcon.print(names)`;
+        const playersResult = await executeRconCommand(playersScript);
+        
+        // If no output, no players are connected
+        if (!playersResult || playersResult.trim() === '') {
+          return {
+            content: [{ type: "text", text: "No players connected" }]
+          };
+        }
+        
+        // Process the results - each line is a player name
+        const players = playersResult.split('\n').filter(Boolean);
+        
+        if (players.length === 0) {
+          return {
+            content: [{ type: "text", text: "No players connected" }]
+          };
+        }
+        
+        // Get inventory for each player
+        let allResults = '';
+        
+        for (const player of players) {
+          // Get inventory for this player
+          const playerScript = `
+            local player = game.get_player('${player}')
+            if not player then
+              return 'Player not found: ${player}'
+            end
+            
+            local result = 'Inventory for ' .. player.name .. ':\\n'
             local main_inventory = player.get_main_inventory()
             
             if main_inventory.is_empty() then
-              result = result .. '  (Empty inventory)\\n'
+              result = result .. '  (Empty inventory)'
             else
               local items = {}
               for _, item in ipairs(main_inventory.get_contents()) do
@@ -217,19 +245,20 @@ server.tool(
               end
             end
             
-            result = result .. '\\n'
-          end
+            return result
+          `;
           
-          return result
-        `;
+          // Execute the Lua script for this player
+          const playerResult = await executeRconCommand(`/silent-command rcon.print((function() ${playerScript} end)())`);
+          
+          // Add to the combined results
+          allResults += playerResult + '\n\n';
+        }
+        
+        return {
+          content: [{ type: "text", text: allResults.trim() }]
+        };
       }
-      
-      // Execute the Lua script
-      const result = await executeRconCommand(`/silent-command rcon.print((function() ${luaScript} end)())`);
-      
-      return {
-        content: [{ type: "text", text: result }]
-      };
     } catch (error: unknown) {
       return {
         content: [{ type: "text", text: `Error occurred: ${error}` }],
