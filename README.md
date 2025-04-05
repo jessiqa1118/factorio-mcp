@@ -96,6 +96,60 @@ Claudeの設定ファイルに以下の設定を追加します：
 }
 ```
 
+## サーバーの起動
+
+MCPサーバーを直接起動するには、以下のコマンドを使用します：
+
+```bash
+# ビルド後に実行
+npm run start
+
+# または
+node build/index.js
+
+# 開発モード（ビルドと実行を同時に行う）
+npm run dev
+```
+
+## WSL上での実行とClineからの接続
+
+WSL上でMCPサーバーを実行し、Windows上のCline（VSCode拡張機能）から接続するには、以下の手順で設定します：
+
+1. WSL上でMCPサーバーをビルドして実行します：
+   ```bash
+   cd /path/to/factorio-mcp
+   npm install
+   npm run build
+   npm run start
+   ```
+
+2. Clineの設定ファイルを編集します。このファイルは通常以下の場所にあります：
+   ```
+   C:\Users\jessiqa\AppData\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
+   ```
+
+3. 設定ファイルに以下のようなエントリを追加します：
+   ```json
+   {
+     "mcpServers": {
+       "factorio": {
+         "command": "wsl",
+         "args": ["-e", "node", "/path/to/factorio-mcp/build/index.js"],
+         "env": {
+           "FACTORIO_SERVER_IP": "あなたのサーバーIP",
+           "FACTORIO_RCON_PORT": "27015",
+           "FACTORIO_RCON_PASSWORD": "あなたのパスワード"
+         },
+         "disabled": false,
+         "autoApprove": []
+       }
+     }
+   }
+   ```
+
+4. `/path/to/factorio-mcp/` を実際のWSL内のパスに置き換えてください。
+5. VSCodeを再起動するか、Cline拡張機能を再読み込みして、設定を反映させます。
+
 ## 使用方法
 
 MCPサーバーを設定した後、Claudeに以下のようなコマンドを使用できます：
@@ -108,13 +162,6 @@ MCPサーバーを設定した後、Claudeに以下のようなコマンドを�
 
 ```
 factorioサーバーのプレイヤーリストを表示して
-```
-
-## 開発
-
-```bash
-# 開発モードで実行
-npm run dev
 ```
 
 ## トラブルシューティング
