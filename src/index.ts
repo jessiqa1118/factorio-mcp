@@ -70,42 +70,32 @@ server.tool(
   {},
   async () => {
     try {
-      // First check if there are any connected players
-      const playerCount = await executeRconCommand('/silent-command rcon.print(#game.connected_players)');
+      // Use a simpler approach with a single command
+      const result = await executeRconCommand('/silent-command for _, p in pairs(game.connected_players) do rcon.print(p.name) end');
       
-      if (parseInt(playerCount) === 0) {
+      // If no output, no players are connected
+      if (!result || result.trim() === '') {
         return {
           content: [{ type: "text", text: "No players connected" }]
         };
       }
       
-      // Get player names directly without using table_to_json
-      const playerNames = await executeRconCommand('/silent-command local names = ""; for _, p in pairs(game.connected_players) do names = names .. p.name .. "," end; rcon.print(names)');
+      // Process the results - each line is a player name
+      const players = result.split('\n').filter(Boolean);
       
-      // Get player online times
-      const playerTimes = await executeRconCommand('/silent-command local times = ""; for _, p in pairs(game.connected_players) do times = times .. p.online_time .. "," end; rcon.print(times)');
-      
-      // Process the results
-      const names = playerNames.split(',').filter(Boolean);
-      const times = playerTimes.split(',').filter(Boolean).map(Number);
-      
-      if (names.length === 0) {
+      if (players.length === 0) {
         return {
           content: [{ type: "text", text: "No players connected" }]
         };
       }
       
       let output = "";
-      // Format the output
-      for (let i = 0; i < names.length; i++) {
-        // Convert ticks to time string manually
-        const ticks = times[i];
-        const seconds = Math.floor(ticks / 60);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const timeStr = `${hours}:${minutes % 60}:${seconds % 60}`;
-        
-        output += `${timeStr} [JOIN] ${names[i]} joined the game\n`;
+      // Format the output with a simple timestamp
+      const now = new Date();
+      const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+      
+      for (const player of players) {
+        output += `${timeStr} [JOIN] ${player} joined the game\n`;
       }
       
       return {
