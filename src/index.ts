@@ -80,7 +80,8 @@ server.tool(
       }
       
       // Get player names only, without any extra information
-      const result = await executeRconCommand('/silent-command local names = ""; for _, p in pairs(game.connected_players) do names = names .. p.name .. "\\n" end; rcon.print(names)');
+      // Use single quotes for the Lua string to avoid escaping issues
+      const result = await executeRconCommand('/silent-command local names = \'\'; for _, p in pairs(game.connected_players) do names = names .. p.name .. \'\\n\' end; rcon.print(names)');
       
       // If no output, no players are connected
       if (!result || result.trim() === '') {
