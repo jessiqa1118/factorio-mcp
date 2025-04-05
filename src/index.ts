@@ -43,7 +43,7 @@ server.tool(
   async () => {
     try {
       // Execute silent command to get server information without in-game notification
-      const result = await executeRconCommand('/silent-command rcon.print(game.table_to_json({version=game.active_mods["base"], tick=game.tick, player_count=table_size(game.connected_players), surface_count=table_size(game.surfaces)}))');
+      const result = await executeRconCommand('/silent-command rcon.print("Version: " .. game.active_mods["base"] .. ", Tick: " .. game.tick .. ", Players: " .. #game.connected_players .. ", Surfaces: " .. #game.surfaces)');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -63,7 +63,7 @@ server.tool(
   async () => {
     try {
       // Execute silent command to get player list without in-game notification
-      const result = await executeRconCommand('/silent-command local players = {}; for _, p in pairs(game.connected_players) do table.insert(players, {name=p.name, online_time=p.online_time}); end; rcon.print(game.table_to_json(players))');
+      const result = await executeRconCommand('/silent-command for _, p in pairs(game.connected_players) do rcon.print(p.name) end');
       return {
         content: [{ type: "text", text: result }]
       };
@@ -83,7 +83,7 @@ server.tool(
   async () => {
     try {
       // Execute silent command to get game time without in-game notification
-      const result = await executeRconCommand('/silent-command local ticks = game.tick; local seconds = ticks / 60; local minutes = math.floor(seconds / 60); local hours = math.floor(minutes / 60); local days = math.floor(hours / 24); rcon.print(string.format("Game time: %d days, %d hours, %d minutes (Total ticks: %d)", days, hours % 24, minutes % 60, ticks))');
+      const result = await executeRconCommand('/silent-command rcon.print("Game time: " .. math.floor(game.tick / (60 * 60 * 24)) .. " days, " .. math.floor(game.tick / (60 * 60)) % 24 .. " hours, " .. math.floor(game.tick / 60) % 60 .. " minutes (Total ticks: " .. game.tick .. ")")');
       return {
         content: [{ type: "text", text: result }]
       };
